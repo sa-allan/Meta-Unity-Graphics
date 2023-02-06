@@ -186,6 +186,8 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.passes.Add(CorePasses.SceneSelection(target));
                 result.passes.Add(CorePasses.ScenePicking(target));
 
+                result.passes.Add(CorePasses.MotionVectors(target));
+
                 return result;
             }
 
