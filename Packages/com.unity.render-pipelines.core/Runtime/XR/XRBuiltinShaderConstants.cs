@@ -130,7 +130,7 @@ namespace UnityEngine.Experimental.Rendering
         /// This is required to maintain compatibility with legacy code and shaders.
         /// </summary>
         /// <param name="cmd"></param>
-        public static void SetBuiltinShaderConstants(CommandBuffer cmd)
+        public static void SetBuiltinShaderConstants(CommandBuffer cmd, bool isOculusMotionVec = false)
         {
 #if ENABLE_VR && ENABLE_XR_MODULE
             cmd.SetGlobalMatrixArray(unity_StereoCameraProjection, s_cameraProjMatrix);
@@ -142,8 +142,9 @@ namespace UnityEngine.Experimental.Rendering
             cmd.SetGlobalMatrixArray(unity_StereoMatrixVP, s_viewProjMatrix);
             cmd.SetGlobalMatrixArray(unity_StereoMatrixInvVP, s_invViewProjMatrix);
             cmd.SetGlobalVectorArray(unity_StereoWorldSpaceCameraPos, s_worldSpaceCameraPos);
-
-            cmd.SetGlobalMatrixArray(unity_StereoMatrixPrevVP, s_prevMVViewProjMatrix);
+            if(isOculusMotionVec) {
+                cmd.SetGlobalMatrixArray(unity_StereoMatrixPrevVP, s_prevMVViewProjMatrix);
+            }
 #endif
         }
 

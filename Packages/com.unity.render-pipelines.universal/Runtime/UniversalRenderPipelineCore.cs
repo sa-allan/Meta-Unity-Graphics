@@ -232,7 +232,7 @@ namespace UnityEngine.Rendering.Universal
                     {
                         XRBuiltinShaderConstants.UpdateBuiltinShaderConstants(GetViewMatrix(viewId), GetProjectionMatrix(viewId), renderIntoTexture, viewId, xr.GetPrevViewValid(), xr.GetPrevViewMatrix(), isOculusMotionVec);
                     }
-                    XRBuiltinShaderConstants.SetBuiltinShaderConstants(cmd);
+                    XRBuiltinShaderConstants.SetBuiltinShaderConstants(cmd, isOculusMotionVec);
                 }
             }
 #endif
