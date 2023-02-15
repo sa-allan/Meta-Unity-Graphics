@@ -367,6 +367,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 result.passes.Add(PassVariant(CorePasses.ScenePicking(target), CorePragmas.DefaultSM45));
 
                 result.passes.Add(PassVariant(LitPasses._2D(target), CorePragmas.DefaultSM45));
+                result.passes.Add(CorePasses.MotionVectors(target));
 
                 return result;
             }
