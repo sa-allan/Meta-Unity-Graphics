@@ -35,6 +35,8 @@ namespace UnityEngine.Rendering.Universal
     {
         internal readonly Matrix4x4 projMatrix;
         internal readonly Matrix4x4 viewMatrix;
+        internal readonly bool prevViewValid;
+        internal readonly Matrix4x4 prevViewMatrix;
         internal readonly Rect viewport;
         internal readonly Mesh occlusionMesh;
         internal readonly int textureArraySlice;
@@ -43,6 +45,8 @@ namespace UnityEngine.Rendering.Universal
         {
             projMatrix = proj;
             viewMatrix = view;
+            prevViewValid = false;
+            prevViewMatrix = Matrix4x4.identity;
             viewport = vp;
             occlusionMesh = null;
             textureArraySlice = dstSlice;
@@ -52,6 +56,8 @@ namespace UnityEngine.Rendering.Universal
         {
             projMatrix = renderParameter.projection;
             viewMatrix = renderParameter.view;
+            prevViewValid = renderParameter.isPreviousViewValid;
+            prevViewMatrix = (prevViewValid) ? renderParameter.previousView : Matrix4x4.identity;
             viewport = renderParameter.viewport;
             occlusionMesh = renderParameter.occlusionMesh;
             textureArraySlice = renderParameter.textureArraySlice;
@@ -78,9 +84,17 @@ namespace UnityEngine.Rendering.Universal
         // Ability to specify where to render the pass
         internal RenderTargetIdentifier  renderTarget     { get; private set; }
         internal RenderTextureDescriptor renderTargetDesc { get; private set; }
+
+        // Same but for motion vectors
+        internal RenderTargetIdentifier motionVectorRenderTarget { get; private set; }
+        internal RenderTextureDescriptor motionVectorRenderTargetDesc { get; private set; }
+
         static   RenderTargetIdentifier  invalidRT = -1;
         internal bool                    renderTargetValid { get => renderTarget != invalidRT; }
         internal bool                    renderTargetIsRenderTexture { get; private set; }
+        internal bool motionVectorRenderTargetValid { get => motionVectorRenderTarget != invalidRT; }
+        internal bool motionVectorRenderTargetIsRenderTexture { get; private set; }
+
         internal bool isLateLatchEnabled { get; set; }
         internal bool canMarkLateLatch { get; set; }
         internal bool hasMarkedLateLatch { get; set; }
@@ -88,6 +102,8 @@ namespace UnityEngine.Rendering.Universal
         // Access to view information
         internal Matrix4x4 GetProjMatrix(int viewIndex = 0)  { return views[viewIndex].projMatrix; }
         internal Matrix4x4 GetViewMatrix(int viewIndex = 0)  { return views[viewIndex].viewMatrix; }
+        internal bool GetPrevViewValid(int viewIndex = 0) { return views[viewIndex].prevViewValid; }
+        internal Matrix4x4 GetPrevViewMatrix(int viewIndex = 0) { return views[viewIndex].prevViewMatrix; }
         internal int GetTextureArraySlice(int viewIndex = 0) { return views[viewIndex].textureArraySlice; }
         internal Rect GetViewport(int viewIndex = 0)         { return views[viewIndex].viewport; }
 
@@ -217,8 +233,24 @@ namespace UnityEngine.Rendering.Universal
             passInfo.xrSdkEnabled = true;
             passInfo.copyDepth = xrRenderPass.shouldFillOutDepth;
             passInfo.customMirrorView = null;
+            passInfo.motionVectorRenderTarget = XRPass.invalidRT;
 
             Debug.Assert(passInfo.renderTargetValid, "Invalid render target from XRDisplaySubsystem!");
+
+            if (xrRenderPass.hasMotionVectorPass)
+            {
+                passInfo.motionVectorRenderTarget = new RenderTargetIdentifier(xrRenderPass.motionVectorRenderTarget, 0, CubemapFace.Unknown, -1);
+
+                RenderTextureDescriptor xrMotionVectorDesc = xrRenderPass.renderTargetDesc;
+                RenderTextureDescriptor rtMotionVectorDesc = new RenderTextureDescriptor(xrMotionVectorDesc.width, xrMotionVectorDesc.height, xrMotionVectorDesc.colorFormat, xrMotionVectorDesc.depthBufferBits, xrMotionVectorDesc.mipCount);
+                rtMotionVectorDesc.dimension = xrRenderPass.renderTargetDesc.dimension;
+                rtMotionVectorDesc.volumeDepth = xrRenderPass.renderTargetDesc.volumeDepth;
+                rtMotionVectorDesc.vrUsage = xrRenderPass.renderTargetDesc.vrUsage;
+                rtMotionVectorDesc.sRGB = xrRenderPass.renderTargetDesc.sRGB;
+                passInfo.motionVectorRenderTargetDesc = rtMotionVectorDesc;
+
+                Debug.Assert(passInfo.motionVectorRenderTargetValid, "Invalid motion vector render target from XRDisplaySubsystem!");
+            }
 
             return passInfo;
         }
@@ -439,22 +471,26 @@ namespace UnityEngine.Rendering.Universal
         // Store array to avoid allocating every frame
         private Matrix4x4[] stereoProjectionMatrix = new Matrix4x4[2];
         private Matrix4x4[] stereoViewMatrix = new Matrix4x4[2];
+        private Matrix4x4[] stereoPrevViewMatrix = new Matrix4x4[2];
         private Matrix4x4[] stereoCameraProjectionMatrix = new Matrix4x4[2];
 
-        internal void UpdateGPUViewAndProjectionMatrices(CommandBuffer cmd, ref CameraData cameraData, bool isRenderToTexture)
+        internal void UpdateGPUViewAndProjectionMatrices(CommandBuffer cmd, ref CameraData cameraData, bool isRenderToTexture, bool isOculusMotionVec = false)
         {
             Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cameraData.xr.GetProjMatrix(0), isRenderToTexture);
             RenderingUtils.SetViewAndProjectionMatrices(cmd, cameraData.xr.GetViewMatrix(0), projectionMatrix, true);
 
             if (cameraData.xr.singlePassEnabled)
             {
+                bool prevViewValid = false;
                 for (int i = 0; i < 2; i++)
                 {
                     stereoCameraProjectionMatrix[i] = cameraData.xr.GetProjMatrix(i);
                     stereoViewMatrix[i] = cameraData.xr.GetViewMatrix(i);
+                    stereoPrevViewMatrix[i] = cameraData.xr.GetPrevViewMatrix(i);
                     stereoProjectionMatrix[i] = GL.GetGPUProjectionMatrix(stereoCameraProjectionMatrix[i], isRenderToTexture);
+                    prevViewValid = cameraData.xr.GetPrevViewValid(i);
                 }
-                RenderingUtils.SetStereoViewAndProjectionMatrices(cmd, stereoViewMatrix, stereoProjectionMatrix, stereoCameraProjectionMatrix, true);
+                RenderingUtils.SetStereoViewAndProjectionMatrices(cmd, stereoViewMatrix, stereoProjectionMatrix, stereoCameraProjectionMatrix, true, prevViewValid, stereoPrevViewMatrix, isOculusMotionVec);
                 if (cameraData.xr.canMarkLateLatch)
                     MarkLateLatchShaderProperties(cmd, ref cameraData);
             }

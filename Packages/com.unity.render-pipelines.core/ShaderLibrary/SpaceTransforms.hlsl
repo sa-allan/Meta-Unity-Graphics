@@ -39,6 +39,11 @@ float4x4 GetWorldToHClipMatrix()
     return UNITY_MATRIX_VP;
 }
 
+float4x4 GetPrevWorldToHClipMatrix()
+{
+    return UNITY_MATRIX_PREV_VP;
+}
+
 // Transform to homogenous clip space
 float4x4 GetViewToHClipMatrix()
 {
@@ -80,6 +85,13 @@ float3 TransformObjectToWorld(float3 positionOS)
     #endif
 }
 
+float3 TransformPreviousObjectToWorld(float3 positionOS)
+{
+    #if !defined(SHADER_STAGE_RAY_TRACING)
+    return mul(GetPrevObjectToWorldMatrix(), float4(positionOS, 1.0)).xyz;
+    #endif
+}
+
 float3 TransformWorldToObject(float3 positionWS)
 {
     #if defined(SHADER_STAGE_RAY_TRACING)
@@ -105,6 +117,11 @@ float4 TransformObjectToHClip(float3 positionOS)
 float4 TransformWorldToHClip(float3 positionWS)
 {
     return mul(GetWorldToHClipMatrix(), float4(positionWS, 1.0));
+}
+
+float4 TransformWorldToPrevHClip(float3 positionWS)
+{
+    return mul(GetPrevWorldToHClipMatrix(), float4(positionWS, 1.0));
 }
 
 // Tranforms position from view space to homogenous space
