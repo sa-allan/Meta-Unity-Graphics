@@ -422,7 +422,9 @@ void SplatmapFragment(
 
 #else
 
-    half4 color = UniversalFragmentPBR(inputData, albedo, metallic, /* specular */ half3(0.0h, 0.0h, 0.0h), smoothness, occlusion, /* emission */ half3(0, 0, 0), alpha);
+    //half4 color = UniversalFragmentBakedLit(inputData, albedo, alpha, normalTS);
+    half4 color = UniversalFragmentBlinnPhong(inputData, albedo, half4(0.0h, 0.0h, 0.0h, 0.0h), smoothness, half3(0, 0, 0), alpha, normalTS);
+    //half4 color = UniversalFragmentPBR(inputData, albedo, metallic, /* specular */ half3(0.0h, 0.0h, 0.0h), smoothness, occlusion, /* emission */ half3(0, 0, 0), alpha);
 
     SplatmapFinalColor(color, inputData.fogCoord);
 

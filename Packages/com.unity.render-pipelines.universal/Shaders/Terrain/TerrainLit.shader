@@ -128,6 +128,7 @@ Shader "Universal Render Pipeline/Terrain/Lit"
             ENDHLSL
         }
 
+
         Pass
         {
             Name "GBuffer"
