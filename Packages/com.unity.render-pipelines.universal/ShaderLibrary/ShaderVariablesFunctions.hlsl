@@ -18,6 +18,20 @@ VertexPositionInputs GetVertexPositionInputs(float3 positionOS)
     return input;
 }
 
+VertexPositionInputs GetVertexPositionInputs(float3 positionOS, float4x4 instanceMat)
+{
+    VertexPositionInputs input;
+    input.positionWS = mul(instanceMat, float4(positionOS.xyz, 1));
+    input.positionVS = TransformWorldToView(input.positionWS);
+    input.positionCS = TransformWorldToHClip(input.positionWS);
+
+    float4 ndc = input.positionCS * 0.5f;
+    input.positionNDC.xy = float2(ndc.x, ndc.y * _ProjectionParams.x) + ndc.w;
+    input.positionNDC.zw = input.positionCS.zw;
+
+    return input;
+}
+
 VertexNormalInputs GetVertexNormalInputs(float3 normalOS)
 {
     VertexNormalInputs tbn;
