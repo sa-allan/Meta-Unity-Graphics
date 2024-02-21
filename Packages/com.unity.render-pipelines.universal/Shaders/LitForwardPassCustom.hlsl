@@ -149,7 +149,14 @@ Varyings LitPassVertex(Attributes input, uint instanceID: SV_InstanceID)
     UNITY_TRANSFER_INSTANCE_ID(input, output);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
-    VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz, _PerInstanceData[instanceID].objectToWorld);
+    float4x4 objectToWorld = unity_ObjectToWorld;
+    float4x4 worldToObject = unity_WorldToObject;
+    #ifdef _ENABLE_CUSTOM_INSTANCED
+    objectToWorld = _PerInstanceData[instanceID].objectToWorld;
+    worldToObject = _PerInstanceData[instanceID].worldToObject;
+    #endif
+
+    VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz, objectToWorld);
 
     // normalWS and tangentWS already normalize.
     // this is required to avoid skewing the direction during interpolation

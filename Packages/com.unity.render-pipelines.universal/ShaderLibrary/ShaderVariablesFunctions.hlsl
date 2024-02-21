@@ -53,6 +53,18 @@ VertexNormalInputs GetVertexNormalInputs(float3 normalOS, float4 tangentOS)
     return tbn;
 }
 
+VertexNormalInputs GetVertexNormalInputs(float3 normalOS, float4 tangentOS, float4x4 objectToWorld)
+{
+    VertexNormalInputs tbn;
+
+    // mikkts space compliant. only normalize when extracting normal at frag.
+    real sign = real(tangentOS.w) * GetOddNegativeScale();
+    tbn.normalWS = TransformObjectToWorldNormal(normalOS, objectToWorld);
+    tbn.tangentWS = real3(TransformObjectToWorldDir(tangentOS.xyz, objectToWorld));
+    tbn.bitangentWS = real3(cross(tbn.normalWS, float3(tbn.tangentWS))) * sign;
+    return tbn;
+}
+
 float4 GetScaledScreenParams()
 {
     return _ScaledScreenParams;
