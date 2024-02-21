@@ -90,6 +90,15 @@ float3 TransformObjectToWorld(float3 positionOS)
     #endif
 }
 
+float3 TransformObjectToWorld(float3 positionOS, float4x4 instanceMat)
+{
+    #if defined(SHADER_STAGE_RAY_TRACING)
+    return mul(ObjectToWorld3x4(), float4(positionOS, 1.0)).xyz;
+    #else
+    return mul(instanceMat, float4(positionOS, 1.0)).xyz;
+    #endif
+}
+
 float3 TransformPreviousObjectToWorld(float3 positionOS)
 {
     return mul(GetPrevObjectToWorldMatrix(), float4(positionOS, 1.0)).xyz;
@@ -143,6 +152,19 @@ float3 TransformObjectToWorldDir(float3 dirOS, bool doNormalize = true)
 {
     #ifndef SHADER_STAGE_RAY_TRACING
     float3 dirWS = mul((float3x3)GetObjectToWorldMatrix(), dirOS);
+    #else
+    float3 dirWS = mul((float3x3)ObjectToWorld3x4(), dirOS);
+    #endif
+    if (doNormalize)
+        return SafeNormalize(dirWS);
+
+    return dirWS;
+}
+
+float3 TransformObjectToWorldDir(float3 dirOS, float4x4 objectToWorld, bool doNormalize = true)
+{
+    #ifndef SHADER_STAGE_RAY_TRACING
+    float3 dirWS = mul((float3x3)objectToWorld, dirOS);
     #else
     float3 dirWS = mul((float3x3)ObjectToWorld3x4(), dirOS);
     #endif
@@ -208,6 +230,20 @@ real3 TransformWorldToHClipDir(real3 directionWS, bool doNormalize = false)
         return normalize(dirHCS);
 
     return dirHCS;
+}
+
+float3 TransformObjectToWorldNormal(float3 normalOS, float4x4 objectToWorld, bool doNormalize = true)
+{
+    #ifdef UNITY_ASSUME_UNIFORM_SCALING
+    return TransformObjectToWorldDir(normalOS, objectToWorld, doNormalize);
+    #else
+    // Normal need to be multiply by inverse transpose
+    float3 normalWS = mul(normalOS, (float3x3)objectToWorld);
+    if (doNormalize)
+        return SafeNormalize(normalWS);
+
+    return normalWS;
+    #endif
 }
 
 // Transforms normal from object to world space
