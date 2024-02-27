@@ -7,7 +7,7 @@ namespace UnityEngine.Rendering
     /// <summary>
     /// An Asset which holds a set of settings to use with a <see cref="Volume"/>.
     /// </summary>
-    [CoreRPHelpURL("Volume-Profile", "com.unity.render-pipelines.high-definition")]
+    [CoreRPHelpURL("Volume-Profile", "com.unity.render-pipelines.urp")]
     public sealed class VolumeProfile : ScriptableObject
     {
         /// <summary>
@@ -40,7 +40,7 @@ namespace UnityEngine.Rendering
         {
             if (components == null)
                return;
-               
+
             for (int i = 0; i < components.Count; i++)
             {
                 if (components[i] != null)
